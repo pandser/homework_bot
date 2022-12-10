@@ -56,7 +56,10 @@ def send_message(bot, message):
 
 
 def get_api_answer(timestamp):
-    """Делает запрос к эндпойнту, в случае успеха возвращает ответ в виде словаря."""
+    """
+    Делает запрос к эндпойнту.
+    В случае успеха возвращает ответ в виде словаря.
+    """
     try:
         response = requests.get(
             ENDPOINT,
@@ -103,10 +106,10 @@ def parse_status(homework):
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
-def send_error_message(bot, error):
-    error_message = f'{error}'
-    send_message(bot, error_message)
-    time.sleep(RETRY_PERIOD)
+def check_last_error(bot, last_error, error):
+    """Проверка последней возникшей ошибки"""
+    if last_error != str(error):
+        send_message(bot, str(error))
 
 
 def main():
@@ -130,32 +133,24 @@ def main():
             time.sleep(RETRY_PERIOD)
 
         except KeyError as error:
-            if last_error != str(error):
-                last_error = str(error)
-                send_error_message(bot, error)
-            else:
-                time.sleep(RETRY_PERIOD)
+            check_last_error(bot, last_error, error)
+            last_error = str(error)
+            time.sleep(RETRY_PERIOD)
 
         except TypeError as error:
-            if last_error != str(error):
-                last_error = str(error)
-                send_error_message(bot, error)
-            else:
-                time.sleep(RETRY_PERIOD)
+            check_last_error(bot, last_error, error)
+            last_error = str(error)
+            time.sleep(RETRY_PERIOD)
 
         except ErrorCodeException as error:
-            if last_error != str(error):
-                last_error = str(error)
-                send_error_message(bot, error)
-            else:
-                time.sleep(RETRY_PERIOD)
+            check_last_error(bot, last_error, error)
+            last_error = str(error)
+            time.sleep(RETRY_PERIOD)
 
         except requests.RequestException as error:
-            if last_error != str(error):
-                last_error = str(error)
-                send_error_message(bot, error)
-            else:
-                time.sleep(RETRY_PERIOD)
+            check_last_error(bot, last_error, error)
+            last_error = str(error)
+            time.sleep(RETRY_PERIOD)
 
         except Exception as error:
             error_message = f'Сбой в работе программы: {error}'
