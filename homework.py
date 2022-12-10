@@ -104,7 +104,7 @@ def parse_status(homework):
 
 
 def check_last_error(bot, last_error, error):
-    """Проверка последней возникшей ошибки"""
+    """Проверка последней возникшей ошибки."""
     if last_error != str(error):
         send_message(bot, str(error))
 
