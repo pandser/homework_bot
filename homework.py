@@ -56,10 +56,7 @@ def send_message(bot, message):
 
 
 def get_api_answer(timestamp):
-    """
-    Делает запрос к эндпойнту.
-    В случае успеха возвращает ответ в виде словаря.
-    """
+    """Делает запрос к эндпойнту, возвращает ответ в виде словаря."""
     try:
         response = requests.get(
             ENDPOINT,
