@@ -20,8 +20,8 @@ logger.addHandler(handler)
 
 
 PRACTICUM_TOKEN = os.getenv('PRACTICUM')
-TELEGRAM_TOKEN = os.getenv('TG_TOKEN')
-TELEGRAM_CHAT_ID = os.getenv('TG_CHAT')
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 RETRY_PERIOD = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
@@ -38,7 +38,9 @@ HOMEWORK_VERDICTS = {
 def check_tokens():
     """Проверка доступности необходимых токенов."""
     if not all([True if os.getenv(var) else False
-                for var in ('PRACTICUM', 'TG_TOKEN', 'TG_CHAT')]):
+                for var in ('PRACTICUM',
+                            'TELEGRAM_TOKEN',
+                            'TELEGRAM_CHAT_ID')]):
         error_message = (
             'Отсутствует одна из обязательных переменных окружения'
         )
