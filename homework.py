@@ -36,9 +36,7 @@ HOMEWORK_VERDICTS = {
 
 
 def check_tokens():
-    """
-    Проверка доступности необходимых токенов.
-    """
+    """Проверка доступности необходимых токенов."""
     if not all([True if os.getenv(var) else False
                 for var in ('PRACTICUM', 'TG_TOKEN', 'TG_CHAT')]):
         error_message = (
@@ -49,21 +47,16 @@ def check_tokens():
 
 
 def send_message(bot, message):
-    """
-    Отправка сообщения телеграм-ботом.
-    """
+    """Отправка сообщения телеграм-ботом."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, text=message)
-        logger.debug(f'Сообщение отправлено')
+        logger.debug('Сообщение отправлено')
     except Exception as error:
         logger.error(f'Сообщение не удалось отправить {error}')
 
 
 def get_api_answer(timestamp):
-    """
-    Делает запрос к эндпойнту, в случае успеха возвращает
-    ответ в виде словаря.
-    """
+    """Делает запрос к эндпойнту, в случае успеха возвращает ответ в виде словаря."""
     try:
         response = requests.get(
             ENDPOINT,
@@ -84,9 +77,7 @@ def get_api_answer(timestamp):
 
 
 def check_response(response):
-    """
-    Проверка полученного ответа на соответствие документации.
-    """
+    """Проверка полученного ответа на соответствие документации."""
     if 'homeworks' in response and isinstance(response.get('homeworks'), list):
         if not response.get('homeworks'):
             logger.debug('Домашние задания не найдены')
@@ -97,9 +88,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """
-    Извлекает статус домащней работы.
-    """
+    """Извлекает статус домащней работы."""
     if homework.get('homework_name') is None:
         logger.error('В ответе нет ожидаемого поля "homework_name"')
         raise KeyError('В ответе нет ожидаемого поля "homework_name"')
