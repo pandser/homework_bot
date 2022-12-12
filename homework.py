@@ -139,25 +139,20 @@ def main():
         except KeyError as error:
             check_last_error(bot, last_error, error)
             last_error = str(error)
-
         except TypeError as error:
             check_last_error(bot, last_error, error)
             last_error = str(error)
-
         except ErrorCodeException as error:
             check_last_error(bot, last_error, error)
             last_error = str(error)
-
         except requests.RequestException as error:
             check_last_error(bot, last_error, error)
             last_error = str(error)
-
         except Exception as error:
             error_message = f'Сбой в работе программы: {error}'
             logger.critical(msg=error_message)
             send_message(bot, error_message)
             break
-
         finally:
             time.sleep(RETRY_PERIOD)
 
