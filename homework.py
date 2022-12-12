@@ -38,7 +38,14 @@ HOMEWORK_VERDICTS = {
 
 def check_tokens():
     """Проверка доступности необходимых токенов."""
-    return all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID))
+    if all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID)):
+        return True
+    else:
+        error_message = (
+            'Отсутствует одна из обязательных переменных окружения'
+        )
+        logger.critical(error_message)
+        raise VariableNotAvailableException(error_message)
 
 
 def send_message(bot, message):
@@ -114,12 +121,7 @@ def check_last_error(bot, last_error, error):
 
 def main():
     """Основная логика работы бота."""
-    if not check_tokens():
-        error_message = (
-            'Отсутствует одна из обязательных переменных окружения'
-        )
-        logger.critical(error_message)
-        raise VariableNotAvailableException(error_message)
+    check_tokens()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
     current_status = 'current_status'
