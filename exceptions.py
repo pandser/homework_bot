@@ -4,3 +4,7 @@ class VariableNotAvailableException(Exception):
 
 class ErrorCodeException(Exception):
     pass
+
+
+class TelegramError(Exception):
+    pass

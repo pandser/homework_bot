@@ -7,7 +7,8 @@ import requests
 import telegram
 from dotenv import load_dotenv
 
-from exeptions import VariableNotAvailableException, ErrorCodeException
+from endpoints import PRACTICUM_API
+from exceptions import VariableNotAvailableException, ErrorCodeException
 
 
 load_dotenv()
@@ -24,7 +25,7 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 RETRY_PERIOD = 600
-ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
+ENDPOINT = PRACTICUM_API
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
 
@@ -37,23 +38,16 @@ HOMEWORK_VERDICTS = {
 
 def check_tokens():
     """Проверка доступности необходимых токенов."""
-    if not all([True if os.getenv(var) else False
-                for var in ('PRACTICUM',
-                            'TELEGRAM_TOKEN',
-                            'TELEGRAM_CHAT_ID')]):
-        error_message = (
-            'Отсутствует одна из обязательных переменных окружения'
-        )
-        logger.critical(error_message)
-        raise VariableNotAvailableException(error_message)
+    return all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID))
 
 
 def send_message(bot, message):
     """Отправка сообщения телеграм-ботом."""
     try:
+        logger.debug('Отправка сообщения')
         bot.send_message(TELEGRAM_CHAT_ID, text=message)
         logger.debug('Сообщение отправлено')
-    except Exception as error:
+    except telegram.TelegramError as error:
         logger.error(f'Сообщение не удалось отправить {error}')
 
 
@@ -67,7 +61,10 @@ def get_api_answer(timestamp):
         )
         logger.debug('Запрос отпрвлен')
         if response.status_code == requests.codes.ok:
-            return response.json()
+            try:
+                return response.json()
+            except ValueError as error:
+                logger.error(error)
         else:
             error_message = (
                 f'Ошибка при запросе к эндпойту. {response.status_code}'
@@ -80,21 +77,25 @@ def get_api_answer(timestamp):
 
 def check_response(response):
     """Проверка полученного ответа на соответствие документации."""
-    if 'homeworks' in response and isinstance(response.get('homeworks'), list):
-        if not response.get('homeworks'):
-            logger.debug('Домашние задания не найдены')
-            return False
-        return True
+    logger.debug('Проверка ответа от сервера')
+    if 'homeworks' in response and 'current_date' in response:
+        if isinstance(response.get('homeworks'), list):
+            if not response.get('homeworks'):
+                logger.debug('Домашние задания не найдены')
+                return False
+            return True
+        else:
+            raise TypeError('Неверный тип поля homeworks')
     else:
-        raise TypeError('Нет ключа homeworks')
+        raise TypeError('Отсутствуют ожидаемые поля homework или current_date')
 
 
 def parse_status(homework):
     """Извлекает статус домащней работы."""
-    if homework.get('homework_name') is None:
+    homework_name = homework.get('homework_name')
+    if homework_name is None:
         logger.error('В ответе нет ожидаемого поля "homework_name"')
         raise KeyError('В ответе нет ожидаемого поля "homework_name"')
-    homework_name = homework.get('homework_name')
     if homework.get('status') not in HOMEWORK_VERDICTS:
         error_message = (
             f'В поле status неожиданное значение {homework.get("status")}'
@@ -113,7 +114,12 @@ def check_last_error(bot, last_error, error):
 
 def main():
     """Основная логика работы бота."""
-    check_tokens()
+    if not check_tokens():
+        error_message = (
+            'Отсутствует одна из обязательных переменных окружения'
+        )
+        logger.critical(error_message)
+        raise VariableNotAvailableException(error_message)
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
     current_status = 'current_status'
@@ -129,33 +135,31 @@ def main():
                     current_status = status
                 logger.debug('Статус не изменился')
             timestamp = response.get('current_date')
-            time.sleep(RETRY_PERIOD)
 
         except KeyError as error:
             check_last_error(bot, last_error, error)
             last_error = str(error)
-            time.sleep(RETRY_PERIOD)
 
         except TypeError as error:
             check_last_error(bot, last_error, error)
             last_error = str(error)
-            time.sleep(RETRY_PERIOD)
 
         except ErrorCodeException as error:
             check_last_error(bot, last_error, error)
             last_error = str(error)
-            time.sleep(RETRY_PERIOD)
 
         except requests.RequestException as error:
             check_last_error(bot, last_error, error)
             last_error = str(error)
-            time.sleep(RETRY_PERIOD)
 
         except Exception as error:
             error_message = f'Сбой в работе программы: {error}'
             logger.critical(msg=error_message)
             send_message(bot, error_message)
             break
+
+        finally:
+            time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
