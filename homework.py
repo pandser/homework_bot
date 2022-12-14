@@ -38,14 +38,7 @@ HOMEWORK_VERDICTS = {
 
 def check_tokens():
     """Проверка доступности необходимых токенов."""
-    if all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID)):
-        return True
-    else:
-        error_message = (
-            'Отсутствует одна из обязательных переменных окружения'
-        )
-        logger.critical(error_message)
-        raise VariableNotAvailableException(error_message)
+    return all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID))
 
 
 def send_message(bot, message):
@@ -85,16 +78,14 @@ def get_api_answer(timestamp):
 def check_response(response):
     """Проверка полученного ответа на соответствие документации."""
     logger.debug('Проверка ответа от сервера')
-    if 'homeworks' in response and 'current_date' in response:
-        if isinstance(response.get('homeworks'), list):
-            if not response.get('homeworks'):
-                logger.debug('Домашние задания не найдены')
-                return False
-            return True
-        else:
-            raise TypeError('Неверный тип поля homeworks')
-    else:
+    if 'homeworks' not in response or 'current_date' not in response:
         raise TypeError('Отсутствуют ожидаемые поля homework или current_date')
+    if not isinstance(response.get('homeworks'), list):
+        raise TypeError('Неверный тип поля homeworks')
+    if not response.get('homeworks'):
+        logger.debug('Домашние задания не найдены')
+        return False
+    return True
 
 
 def parse_status(homework):
@@ -121,7 +112,12 @@ def check_last_error(bot, last_error, error):
 
 def main():
     """Основная логика работы бота."""
-    check_tokens()
+    if not check_tokens():
+        error_message = (
+            'Отсутствует одна из обязательных переменных окружения'
+        )
+        logger.critical(error_message)
+        raise VariableNotAvailableException(error_message)
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
     current_status = 'current_status'
